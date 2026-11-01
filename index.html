@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#e0e5ec">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MP3 Player">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Uging MP3 Player</title>
+<style>
+:root{--bg:#e0e5ec;--light:#fff;--dark:#a3b1c6;--text:#2d3a4f;--muted:#6b7a90;--accent:#3b82f6;--accent2:#c0392b}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text);
+  display:flex;flex-direction:column;align-items:center;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 14px calc(env(safe-area-inset-bottom,0px) + 10px);gap:8px;user-select:none;-webkit-user-select:none}
+header h1{font-size:22px;text-align:center;font-weight:800;
+  background:linear-gradient(90deg,#c0392b,#3b82f6,#8e44ad,#16a085,#c0392b);background-size:300% 100%;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+  animation:flow 4s linear infinite}
+@keyframes flow{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+.card{background:var(--bg);border-radius:32px;box-shadow:10px 10px 20px var(--dark),-10px -10px 20px var(--light);
+  padding:16px 18px;width:100%;max-width:360px;flex:1;display:flex;flex-direction:column;justify-content:space-evenly;min-height:0}
+.art{width:170px;height:170px;margin:0 auto;border-radius:50%;background:var(--bg);
+  box-shadow:inset 7px 7px 14px var(--dark),inset -7px -7px 14px var(--light);display:flex;align-items:center;justify-content:center}
+.disc{width:112px;height:112px;border-radius:50%;background:var(--bg);font-size:44px;
+  box-shadow:7px 7px 14px var(--dark),-7px -7px 14px var(--light);display:flex;align-items:center;justify-content:center}
+.art.spin .disc{animation:spin 10s linear infinite}
+.art.paused .disc{animation-play-state:paused}
+@keyframes spin{to{transform:rotate(360deg)}}
+.info{text-align:center}
+.title{font-weight:700;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.artist{font-size:12px;color:var(--muted);margin-top:3px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:9px;border-radius:10px;background:var(--bg);
+  box-shadow:inset 3px 3px 6px var(--dark),inset -3px -3px 6px var(--light);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--bg);
+  box-shadow:3px 3px 6px var(--dark),-3px -3px 6px var(--light)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--bg);border:none;
+  box-shadow:3px 3px 6px var(--dark),-3px -3px 6px var(--light)}
+.row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
+.row input{flex:1}
+.time{min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
+.controls{display:flex;justify-content:center;align-items:center;gap:14px}
+.btn{width:50px;height:50px;border-radius:50%;border:none;background:var(--bg);color:var(--text);font-size:17px;cursor:pointer;
+  box-shadow:5px 5px 10px var(--dark),-5px -5px 10px var(--light);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn:active,.btn.active{box-shadow:inset 3px 3px 6px var(--dark),inset -3px -3px 6px var(--light)}
+.btn.active{color:var(--accent)}
+.btn.sm{width:40px;height:40px;font-size:13px}
+.btn.play{width:66px;height:66px;font-size:22px;color:var(--accent)}
+.pill{flex:1;padding:11px 6px;border-radius:24px;border:none;background:var(--bg);color:var(--accent);font-weight:600;font-size:13px;cursor:pointer;
+  box-shadow:5px 5px 10px var(--dark),-5px -5px 10px var(--light)}
+.pill:active,.pill.on{box-shadow:inset 3px 3px 6px var(--dark),inset -3px -3px 6px var(--light)}
+.pill.small{flex:none;padding:8px 14px}
+.actions{display:flex;gap:10px}
+.status{text-align:center;font-size:11px;color:var(--muted);min-height:14px}
+#fileInput{display:none}
+.sheet{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;padding:16px;z-index:5;
+  padding-top:calc(env(safe-area-inset-top,0px) + 16px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 16px)}
+.sheet.show{display:flex}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px}
+.sheet-head h2{font-size:16px;color:var(--muted);letter-spacing:.5px}
+.hide-sb{scrollbar-width:none;-ms-overflow-style:none}
+.hide-sb::-webkit-scrollbar{display:none}
+.list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.track{padding:10px 12px 10px 14px;border-radius:18px;background:var(--bg);box-shadow:inset 3px 3px 6px var(--dark),inset -3px -3px 6px var(--light);
+  cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px}
+.track .tname{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track.current .tname{color:var(--accent);font-weight:700}
+.del{width:30px;height:30px;border-radius:50%;border:none;background:var(--bg);color:var(--accent2);font-size:13px;cursor:pointer;flex-shrink:0;
+  box-shadow:3px 3px 6px var(--dark),-3px -3px 6px var(--light)}
+.empty{text-align:center;color:var(--muted);font-size:14px;padding:30px 0}
+.eq-top{display:flex;gap:8px;margin-bottom:14px;align-items:center}
+.sel{flex:1;padding:10px;border:none;border-radius:16px;background:var(--bg);color:var(--text);font-size:14px;outline:none;
+  box-shadow:inset 3px 3px 6px var(--dark),inset -3px -3px 6px var(--light)}
+.pre-row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);margin-bottom:14px}
+.pre-row input{flex:1}
+.bands{display:flex;justify-content:space-between;align-items:flex-end;height:200px;padding:0 2px}
+.bandcol{display:flex;flex-direction:column;align-items:center;width:30px}
+.dbv{font-size:11px;color:var(--muted);height:16px;font-variant-numeric:tabular-nums}
+.band{position:relative;width:30px;height:150px}
+.band input{position:absolute;width:150px;height:9px;left:-60px;top:70px;transform:rotate(-90deg);margin:0}
+.lbl{font-size:10px;color:var(--muted);margin-top:6px}
+.eq-foot{display:flex;gap:10px;margin-top:14px}
+</style>
+</head>
+<body>
+
+<header><h1>Uging MP3 Player</h1></header>
+
+<div class="card">
+  <div class="art" id="art"><div class="disc">🎵</div></div>
+  <div class="info">
+    <div class="title" id="title">Walang Kanta</div>
+    <div class="artist" id="artist">Magdagdag ng kanta para magsimula</div>
+  </div>
+  <div class="row">
+    <span class="time" id="cur">0:00</span>
+    <input type="range" id="seek" min="0" max="100" value="0" step="0.1">
+    <span class="time" id="dur">0:00</span>
+  </div>
+  <div class="controls">
+    <button class="btn sm" id="shuffleBtn" title="Shuffle">⇄</button>
+    <button class="btn" id="prevBtn">⏮</button>
+    <button class="btn play" id="playBtn">▶</button>
+    <button class="btn" id="nextBtn">⏭</button>
+    <button class="btn sm" id="repeatBtn" title="Repeat">↻</button>
+  </div>
+  <div class="row">
+    <span>🔈</span>
+    <input type="range" id="volume" min="0" max="1" step="0.01" value="0.8">
+    <span>🔊</span>
+  </div>
+  <div class="actions">
+    <button class="pill" id="findBtn">📁 Maghanap</button>
+    <button class="pill" id="listBtn">☰ Playlist</button>
+    <button class="pill" id="eqBtn">🎚 EQ</button>
+  </div>
+  <div class="status" id="status"></div>
+</div>
+
+<input type="file" id="fileInput" accept=".mp3,audio/mpeg" multiple>
+<audio id="audio" preload="metadata"></audio>
+
+<!-- Playlist sheet -->
+<div class="sheet" id="plSheet">
+  <div class="sheet-head">
+    <h2>PLAYLIST</h2>
+    <div style="display:flex;gap:8px">
+      <button class="pill small" id="addSheetBtn">+ Add</button>
+      <button class="pill small" id="plClose">Isara</button>
+    </div>
+  </div>
+  <div class="list hide-sb" id="list"></div>
+</div>
+
+<!-- Equalizer sheet -->
+<div class="sheet" id="eqSheet">
+  <div class="sheet-head">
+    <h2>EQUALIZER</h2>
+    <button class="pill small" id="eqClose">Isara</button>
+  </div>
+  <div class="eq-top">
+    <button class="pill small" id="eqToggle">EQ: ON</button>
+    <select class="sel" id="presetSel"></select>
+  </div>
+  <div class="pre-row">
+    <span>Preamp</span>
+    <input type="range" id="pre" min="-12" max="12" step="1">
+    <span id="preVal" style="min-width:34px;text-align:center">0</span>
+  </div>
+  <div class="bands" id="bands"></div>
+  <div class="eq-foot">
+    <button class="pill" id="eqReset">↺ Reset</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const audio = $('audio');
+const playBtn = $('playBtn'), art = $('art'), seek = $('seek'), volume = $('volume');
+const curEl = $('cur'), durEl = $('dur'), titleEl = $('title'), artistEl = $('artist'), statusEl = $('status');
+let tracks = [], index = -1, shuffle = false, repeat = false, seeking = false;
+audio.volume = parseFloat(volume.value);
+
+const say = m => { statusEl.textContent = m; };
+const fmt = s => isFinite(s) ? Math.floor(s/60) + ':' + Math.floor(s%60).toString().padStart(2,'0') : '0:00';
+
+/* ---------- Persistent storage (IndexedDB) ---------- */
+const DB_NAME = 'mp3player', STORE = 'songs';
+function openDB(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(STORE, { keyPath: 'id' });
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function dbRun(mode, fn){
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(STORE, mode);
+    const req = fn(tx.objectStore(STORE));
+    tx.oncomplete = () => res(req ? req.result : undefined);
+    tx.onerror = () => rej(tx.error);
+  });
+}
+const dbPut = rec => dbRun('readwrite', s => s.put(rec));
+const dbDel = id => dbRun('readwrite', s => s.delete(id));
+const dbAll = () => dbRun('readonly', s => s.getAll());
+
+async function loadLibrary(){
+  try {
+    const recs = await dbAll();
+    tracks = recs.map(r => ({ ...r, url: URL.createObjectURL(r.blob) }));
+    renderList();
+    if(tracks.length) say(tracks.length + ' kanta ang nakasave');
+  } catch(e){ say('Hindi mabasa ang nakasave na kanta'); }
+}
+
+/* ---------- Playlist ---------- */
+function renderList(){
+  const list = $('list');
+  if(!tracks.length){ list.innerHTML = '<div class="empty">Wala pang kanta.<br>Pindutin ang "+ Add".</div>'; return; }
+  list.innerHTML = '';
+  tracks.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'track' + (i === index ? ' current' : '');
+    row.innerHTML = '<span class="tname"></span><button class="del" title="Tanggalin">✕</button>';
+    row.querySelector('.tname').textContent = (i+1) + '. ' + t.title;
+    row.onclick = () => { playIndex(i); $('plSheet').classList.remove('show'); };
+    row.querySelector('.del').onclick = e => { e.stopPropagation(); removeTrack(i); };
+    list.appendChild(row);
+  });
+}
+
+async function removeTrack(i){
+  const t = tracks[i];
+  try { await dbDel(t.id); } catch(e){}
+  URL.revokeObjectURL(t.url);
+  tracks.splice(i, 1);
+  if(index === i){
+    audio.pause(); audio.removeAttribute('src'); audio.load();
+    index = -1; titleEl.textContent = 'Walang Kanta'; artistEl.textContent = 'Magdagdag ng kanta para magsimula';
+    playBtn.textContent = '▶'; art.classList.remove('spin');
+  } else if(index > i) index--;
+  renderList();
+  say('Natanggal ang kanta');
+}
+
+function playIndex(i){
+  initAudio();
+  index = i; const t = tracks[i];
+  audio.src = t.url; titleEl.textContent = t.title; artistEl.textContent = t.artist;
+  seek.value = 0; curEl.textContent = '0:00';
+  audio.play().catch(()=>{});
+  renderList();
+  if('mediaSession' in navigator){
+    navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist });
+  }
+}
+function togglePlay(){
+  initAudio();
+  if(index < 0){ if(tracks.length) playIndex(0); return; }
+  audio.paused ? audio.play().catch(()=>{}) : audio.pause();
+}
+function nextTrack(){
+  if(!tracks.length) return;
+  let n;
+  if(shuffle && tracks.length > 1){ do { n = Math.floor(Math.random()*tracks.length); } while(n === index); }
+  else n = (index + 1) % tracks.length;
+  playIndex(n);
+}
+function prevTrack(){
+  if(!tracks.length) return;
+  if(audio.currentTime > 3){ audio.currentTime = 0; return; }
+  playIndex((index - 1 + tracks.length) % tracks.length);
+}
+
+playBtn.onclick = togglePlay;
+$('nextBtn').onclick = nextTrack;
+$('prevBtn').onclick = prevTrack;
+$('shuffleBtn').onclick = () => { shuffle = !shuffle; $('shuffleBtn').classList.toggle('active', shuffle); };
+$('repeatBtn').onclick = () => { repeat = !repeat; $('repeatBtn').classList.toggle('active', repeat); };
+$('findBtn').onclick = () => $('fileInput').click();
+$('addSheetBtn').onclick = () => $('fileInput').click();
+$('listBtn').onclick = () => { renderList(); $('plSheet').classList.add('show'); };
+$('plClose').onclick = () => $('plSheet').classList.remove('show');
+
+$('fileInput').onchange = async e => {
+  const files = Array.from(e.target.files);
+  let added = 0;
+  for(const f of files){
+    const rec = {
+      id: 's' + Date.now() + Math.random().toString(36).slice(2),
+      title: f.name.replace(/\.[^/.]+$/, ''),
+      artist: 'Lokal na file',
+      blob: f
+    };
+    try {
+      await dbPut(rec);
+      tracks.push({ ...rec, url: URL.createObjectURL(f) });
+      added++;
+    } catch(err){ say('Hindi na-save ang ' + f.name); }
+  }
+  renderList();
+  if(added) say(added + ' kanta ang naidagdag at nakasave na');
+  if(index < 0 && tracks.length) { index = 0; titleEl.textContent = tracks[0].title; artistEl.textContent = tracks[0].artist; }
+  e.target.value = '';
+};
+
+/* ---------- Audio events ---------- */
+audio.addEventListener('play', () => { playBtn.textContent = '❚❚'; art.classList.add('spin'); art.classList.remove('paused'); });
+audio.addEventListener('pause', () => { playBtn.textContent = '▶'; art.classList.add('paused'); });
+audio.addEventListener('loadedmetadata', () => { durEl.textContent = fmt(audio.duration); });
+audio.addEventListener('timeupdate', () => {
+  if(seeking) return;
+  curEl.textContent = fmt(audio.currentTime);
+  if(audio.duration) seek.value = (audio.currentTime / audio.duration) * 100;
+});
+audio.addEventListener('ended', () => {
+  if(repeat && !shuffle){ audio.currentTime = 0; audio.play(); } else nextTrack();
+});
+seek.addEventListener('input', () => { seeking = true; if(audio.duration) curEl.textContent = fmt((seek.value/100)*audio.duration); });
+seek.addEventListener('change', () => { if(audio.duration) audio.currentTime = (seek.value/100)*audio.duration; seeking = false; });
+volume.addEventListener('input', () => { audio.volume = parseFloat(volume.value); });
+
+if('mediaSession' in navigator){
+  navigator.mediaSession.setActionHandler('play', () => audio.play());
+  navigator.mediaSession.setActionHandler('pause', () => audio.pause());
+  navigator.mediaSession.setActionHandler('nexttrack', nextTrack);
+  navigator.mediaSession.setActionHandler('previoustrack', prevTrack);
+}
+
+/* ---------- Equalizer (Web Audio API) ---------- */
+const FREQS  = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+const LABELS = ['32','64','125','250','500','1k','2k','4k','8k','16k'];
+const PRESETS = {
+  Flat:      [0,0,0,0,0,0,0,0,0,0],
+  Bass:      [6,5,4,2,0,0,0,0,0,0],
+  Treble:    [0,0,0,0,0,1,3,4,5,5],
+  Pop:       [-1,2,4,4,2,-1,-2,-2,-1,-1],
+  Rock:      [5,4,2,-1,-2,-1,2,4,5,5],
+  Vocal:     [-2,-3,-2,2,4,4,3,1,0,-1],
+  Jazz:      [3,2,1,2,-2,-2,0,1,2,3],
+  Classical: [0,0,0,0,0,0,-2,-3,-3,-4],
+  Dance:     [5,4,1,0,1,3,4,3,2,1],
+  Latin:     [3,2,0,-1,-1,1,3,3,4,2]
+};
+let eq = JSON.parse(localStorage.getItem('eqState') || 'null') || { on: true, pre: 0, bands: PRESETS.Flat.slice(), preset: 'Flat' };
+
+let ctx = null, preGain = null, filters = [];
+function initAudio(){
+  if(ctx){ if(ctx.state === 'suspended') ctx.resume(); return; }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if(!AC) return;
+  try {
+    ctx = new AC();
+    const src = ctx.createMediaElementSource(audio);
+    preGain = ctx.createGain();
+    filters = FREQS.map(f => {
+      const b = ctx.createBiquadFilter();
+      b.type = 'peaking'; b.frequency.value = f; b.Q.value = 1.4; b.gain.value = 0;
+      return b;
+    });
+    let node = src;
+    node.connect(preGain); node = preGain;
+    filters.forEach(b => { node.connect(b); node = b; });
+    node.connect(ctx.destination);
+    applyEQ();
+  } catch(e){ ctx = null; say('Hindi suportado ang equalizer sa browser na ito'); }
+}
+function applyEQ(){
+  if(!ctx) return;
+  preGain.gain.value = eq.on ? Math.pow(10, eq.pre/20) : 1;
+  filters.forEach((b, i) => b.gain.value = eq.on ? eq.bands[i] : 0);
+}
+function saveEQ(){ localStorage.setItem('eqState', JSON.stringify(eq)); }
+
+function buildEQ(){
+  const sel = $('presetSel');
+  sel.innerHTML = '';
+  Object.keys(PRESETS).forEach(n => {
+    const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o);
+  });
+  const oc = document.createElement('option'); oc.value = 'Custom'; oc.textContent = 'Custom'; sel.appendChild(oc);
+  sel.value = eq.preset;
+
+  const bandsEl = $('bands');
+  bandsEl.innerHTML = '';
+  eq.bands.forEach((v, i) => {
+    const col = document.createElement('div');
+    col.className = 'bandcol';
+    col.innerHTML = '<span class="dbv"></span><div class="band"><input type="range" min="-12" max="12" step="1"></div><span class="lbl">' + LABELS[i] + '</span>';
+    const inp = col.querySelector('input'), dbv = col.querySelector('.dbv');
+    inp.value = v; dbv.textContent = v;
+    inp.oninput = () => {
+      eq.bands[i] = +inp.value; dbv.textContent = inp.value;
+      eq.preset = 'Custom'; $('presetSel').value = 'Custom';
+      applyEQ(); saveEQ();
+    };
+    bandsEl.appendChild(col);
+  });
+  $('pre').value = eq.pre; $('preVal').textContent = eq.pre;
+  $('eqToggle').textContent = 'EQ: ' + (eq.on ? 'ON' : 'OFF');
+  $('eqToggle').classList.toggle('on', !eq.on);
+}
+
+$('eqBtn').onclick = () => { buildEQ(); $('eqSheet').classList.add('show'); };
+$('eqClose').onclick = () => $('eqSheet').classList.remove('show');
+$('presetSel').onchange = e => {
+  const v = e.target.value;
+  if(PRESETS[v]){ eq.bands = PRESETS[v].slice(); eq.preset = v; buildEQ(); applyEQ(); saveEQ(); }
+};
+$('pre').oninput = e => { eq.pre = +e.target.value; $('preVal').textContent = eq.pre; applyEQ(); saveEQ(); };
+$('eqToggle').onclick = () => { eq.on = !eq.on; buildEQ(); applyEQ(); saveEQ(); };
+$('eqReset').onclick = () => { eq = { on: true, pre: 0, bands: PRESETS.Flat.slice(), preset: 'Flat' }; buildEQ(); applyEQ(); saveEQ(); };
+
+/* ---------- Start ---------- */
+if(navigator.storage && navigator.storage.persist) navigator.storage.persist();
+loadLibrary();
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
+</script>
+</body>
+</html>
